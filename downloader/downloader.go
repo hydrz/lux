@@ -18,9 +18,9 @@ import (
 	"github.com/cheggaaa/pb/v3"
 	"github.com/pkg/errors"
 
-	"github.com/iawia002/lux/extractors"
-	"github.com/iawia002/lux/request"
-	"github.com/iawia002/lux/utils"
+	"github.com/hydrz/lux/extractors"
+	"github.com/hydrz/lux/request"
+	"github.com/hydrz/lux/utils"
 )
 
 // Options defines options used in downloading.

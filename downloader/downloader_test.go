@@ -3,7 +3,7 @@ package downloader
 import (
 	"testing"
 
-	"github.com/iawia002/lux/extractors"
+	"github.com/hydrz/lux/extractors"
 )
 
 func TestDownload(t *testing.T) {

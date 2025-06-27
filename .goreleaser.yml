@@ -7,7 +7,7 @@ before:
     - go mod download
 builds:
 - binary: lux
-  ldflags: -s -w -X github.com/iawia002/lux/app.version={{ .RawVersion }}
+  ldflags: -s -w -X github.com/hydrz/lux/app.version={{ .RawVersion }}
   goos:
     - windows
     - darwin

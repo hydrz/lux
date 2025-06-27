@@ -3,8 +3,8 @@ package douyin
 import (
 	"testing"
 
-	"github.com/iawia002/lux/extractors"
-	"github.com/iawia002/lux/test"
+	"github.com/hydrz/lux/extractors"
+	"github.com/hydrz/lux/test"
 )
 
 func TestDownload(t *testing.T) {

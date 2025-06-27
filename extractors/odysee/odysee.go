@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/iawia002/lux/extractors"
-	"github.com/iawia002/lux/request"
+	"github.com/hydrz/lux/extractors"
+	"github.com/hydrz/lux/request"
 	"github.com/pkg/errors"
 )
 

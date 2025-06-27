@@ -3,9 +3,9 @@ package threads_test
 import (
 	"testing"
 
-	"github.com/iawia002/lux/extractors"
-	"github.com/iawia002/lux/extractors/threads"
-	"github.com/iawia002/lux/test"
+	"github.com/hydrz/lux/extractors"
+	"github.com/hydrz/lux/extractors/threads"
+	"github.com/hydrz/lux/test"
 )
 
 func TestDownload(t *testing.T) {

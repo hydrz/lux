@@ -9,8 +9,8 @@ import (
 	"github.com/itchyny/gojq"
 	"github.com/pkg/errors"
 
-	"github.com/iawia002/lux/extractors"
-	"github.com/iawia002/lux/request"
+	"github.com/hydrz/lux/extractors"
+	"github.com/hydrz/lux/request"
 )
 
 func init() {

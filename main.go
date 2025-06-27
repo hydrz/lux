@@ -2,15 +2,23 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/fatih/color"
 
-	"github.com/iawia002/lux/app"
+	"github.com/hydrz/lux/app"
 )
 
+func init() {
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slog.LevelDebug,
+	})))
+}
+
 func main() {
-	if err := app.New().Run(os.Args); err != nil {
+	if err := app.NewRootCmd().Execute(); err != nil {
 		fmt.Fprintf(
 			color.Output,
 			"Run %s failed: %s\n",
