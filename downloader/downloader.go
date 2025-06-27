@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -562,7 +563,12 @@ func (downloader *Downloader) Download(data *extractors.Data) error {
 	if title == "" {
 		title = data.Title
 	}
-	title = utils.FileName(title, "", downloader.option.FileNameLength)
+	// Support multi-level paths in title
+	if strings.Contains(title, "/") {
+		title = utils.FileNameWithPath(title, "", downloader.option.FileNameLength)
+	} else {
+		title = utils.FileName(title, "", downloader.option.FileNameLength)
+	}
 
 	streamName := downloader.option.Stream
 	if streamName == "" {

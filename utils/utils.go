@@ -100,20 +100,71 @@ func FileName(name, ext string, length int) string {
 	return fmt.Sprintf("%s.%s", limitedName, ext)
 }
 
+// cleanPathSegment cleans a single path segment to make it valid for file systems
+func cleanPathSegment(segment string) string {
+	if segment == "" {
+		return ""
+	}
+
+	rep := strings.NewReplacer("\n", " ", "|", "-", ": ", "：", ":", "：", "'", "'")
+	segment = rep.Replace(segment)
+	if runtime.GOOS == "windows" {
+		rep = strings.NewReplacer("\"", " ", "?", " ", "*", " ", "\\", " ", "<", " ", ">", " ")
+		segment = rep.Replace(segment)
+	}
+	return segment
+}
+
+// FileNameWithPath converts a string with path separators to a valid file path
+// It cleans each path segment while preserving the path structure
+func FileNameWithPath(nameWithPath, ext string, length int) string {
+	if nameWithPath == "" {
+		return ""
+	}
+
+	// Split the path into segments
+	segments := strings.Split(nameWithPath, "/")
+	cleanedSegments := make([]string, len(segments))
+
+	// Clean each segment individually
+	for i, segment := range segments {
+		cleanedSegments[i] = cleanPathSegment(segment)
+	}
+
+	// Rejoin the segments
+	cleanedPath := strings.Join(cleanedSegments, "/")
+
+	// Apply length limit to the full path if specified
+	limitedPath := LimitLength(cleanedPath, length)
+
+	if ext == "" {
+		return limitedPath
+	}
+	return fmt.Sprintf("%s.%s", limitedPath, ext)
+}
+
 // FilePath gen valid file path
 func FilePath(name, ext string, length int, outputPath string, escape bool) (string, error) {
-	if outputPath != "" {
-		if _, err := os.Stat(outputPath); err != nil {
-			return "", err
-		}
-	}
 	var fileName string
 	if escape {
-		fileName = FileName(name, ext, length)
+		if strings.Contains(name, "/") {
+			fileName = FileNameWithPath(name, ext, length)
+		} else {
+			fileName = FileName(name, ext, length)
+		}
 	} else {
 		fileName = fmt.Sprintf("%s.%s", name, ext)
 	}
-	return filepath.Join(outputPath, fileName), nil
+
+	fullPath := filepath.Join(outputPath, fileName)
+
+	// Create directories if they don't exist
+	dir := filepath.Dir(fullPath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", err
+	}
+
+	return fullPath, nil
 }
 
 // FileLineCounter Counts line in file
