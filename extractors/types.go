@@ -40,6 +40,8 @@ const (
 	DataTypeImage DataType = "image"
 	// DataTypeAudio indicates the type of extracted data is the audio.
 	DataTypeAudio DataType = "audio"
+	// DataTypeDocument indicates the type of extracted data is the document.
+	DataTypeDocument DataType = "document"
 )
 
 // Data is the main data structure for the whole video data.

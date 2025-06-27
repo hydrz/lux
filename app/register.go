@@ -9,6 +9,7 @@ import (
 	_ "github.com/hydrz/lux/extractors/douyu"
 	_ "github.com/hydrz/lux/extractors/eporner"
 	_ "github.com/hydrz/lux/extractors/facebook"
+	_ "github.com/hydrz/lux/extractors/gaodun"
 	_ "github.com/hydrz/lux/extractors/geekbang"
 	_ "github.com/hydrz/lux/extractors/haokan"
 	_ "github.com/hydrz/lux/extractors/hupu"
