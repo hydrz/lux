@@ -52,6 +52,8 @@ type APIClient interface {
 	// AuthorizeKey retrieves authorization key for video access
 	// GET https://apigateway.gaodun.com/glive2-vod/api/v1/replay/authorizeKey?id={id}
 	AuthorizeKey(id string) (string, error)
+
+	Headers() map[string]string
 }
 
 // NewClient creates a new API client with proper authentication headers
@@ -81,6 +83,11 @@ func NewClient() APIClient {
 // client handles all API interactions with Gaodun services
 type client struct {
 	headers map[string]string
+}
+
+// Headers returns the headers used for API requests
+func (c *client) Headers() map[string]string {
+	return maps.Clone(c.headers)
 }
 
 func (c *client) do(method, url string, body io.Reader, additionalHeaders ...map[string]string) ([]byte, error) {

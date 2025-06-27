@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/hydrz/lux/extractors"
+	"github.com/hydrz/lux/request"
 	"github.com/hydrz/lux/utils"
 	"github.com/pkg/errors"
 )
@@ -72,6 +73,13 @@ func (e *extractor) Extract(URL string, option extractors.Options) ([]*extractor
 	// Create API client
 	e.api = NewClient()
 	e.option = option
+
+	// Set request options for better compatibility with Gaodun servers
+	request.SetOptions(request.Options{
+		UserAgent:  "Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36",
+		Refer:      "https://www.gaodun.com/",
+		RetryTimes: 3,
+	})
 
 	// Parse course ID from URL
 	courseID, err := extractCourseID(URL)
@@ -428,41 +436,64 @@ func (e *extractor) processResource(resource Resource, baseDir string) (*extract
 
 // processVideoResource processes video resources
 func (e *extractor) processVideoResource(resource Resource, baseDir string) (*extractors.Data, error) {
-	sourceID := resource.VideoID
+	videoID := resource.VideoID
 
 	// Get video resource information
-	videoRes, err := e.api.VideoResource(sourceID, "SD", 0)
+	videoRes, err := e.api.VideoResource(videoID, "SD", 0)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	// Get authorization key if needed (currently not used but available for future enhancement)
-	_, err = e.api.AuthorizeKey(sourceID)
-	if err != nil {
-		// Authorization key might not be required for all videos, continue anyway
-	}
+	slog.Info("video resource info",
+		"source_id", videoID,
+		"title", videoRes.Title,
+		"duration", videoRes.Duration,
+		"encrypt", videoRes.Encrypt,
+		"qualities", len(videoRes.List),
+	)
 
 	// Create streams for different qualities
 	streams := make(map[string]*extractors.Stream)
 
 	for quality, qualityInfo := range videoRes.List {
 		if qualityInfo.Available != 1 || qualityInfo.Path == "" {
+			slog.Warn("skipping unavailable quality",
+				"quality", quality,
+				"available", qualityInfo.Available,
+				"has_path", qualityInfo.Path != "",
+			)
 			continue
 		}
 
-		// Parse M3U8 URLs
-		urls, err := utils.M3u8URLs(qualityInfo.Path)
+		slog.Info("processing video quality",
+			"quality", quality,
+			"resolution", qualityInfo.Resolution.Resolution,
+			"file_size_kb", qualityInfo.FileSize,
+			"is_watermark", qualityInfo.IsWatermark,
+			"path", qualityInfo.Path,
+		)
+
+		urls, err := utils.M3u8URLsWithHeaders(qualityInfo.Path, e.api.Headers())
 		if err != nil {
+			slog.Error("failed to parse M3U8 URLs",
+				"path", qualityInfo.Path,
+				"error", err,
+			)
 			continue
 		}
 
 		// Create parts for M3U8 segments
 		parts := make([]*extractors.Part, 0, len(urls))
-		for _, url := range urls {
+		for i, url := range urls {
 			parts = append(parts, &extractors.Part{
 				URL: url,
 				Ext: "ts",
 			})
+
+			// Log first few URLs for debugging
+			if i < 3 {
+				slog.Debug("TS segment URL", "index", i, "url", url)
+			}
 		}
 
 		id := resource.VideoID + "_" + quality
@@ -472,8 +503,7 @@ func (e *extractor) processVideoResource(resource Resource, baseDir string) (*ex
 			Parts:   parts,
 			Quality: qualityInfo.Resolution.Resolution,
 			Size:    int64(qualityInfo.FileSize * 1024),
-			NeedMux: true,  // M3U8 segments need to be muxed to MP4
-			Ext:     "mp4", // Default to MP4 for video streams
+			NeedMux: false,
 		}
 	}
 
@@ -492,7 +522,7 @@ func (e *extractor) processVideoResource(resource Resource, baseDir string) (*ex
 		Title:   filepath.Join(baseDir, filename),
 		Type:    extractors.DataTypeVideo,
 		Streams: streams,
-		URL:     fmt.Sprintf("gaodun://video/%s", sourceID),
+		URL:     fmt.Sprintf("gaodun://video/%s", videoID),
 	}, nil
 }
 
@@ -556,4 +586,48 @@ func (e *extractor) processNonVideoResource(resource Resource, baseDir string) (
 		Streams: streams,
 		URL:     resource.Path,
 	}, nil
+}
+
+// testM3U8Accessibility tests if the M3U8 URL is accessible
+func (e *extractor) testM3U8Accessibility(m3u8URL string, headers map[string]string) error {
+	resp, err := request.Request("HEAD", m3u8URL, nil, headers)
+	if err != nil {
+		return fmt.Errorf("failed to access M3U8 URL: %w", err)
+	}
+	defer resp.Body.Close()
+
+	slog.Info("M3U8 accessibility check",
+		"url", m3u8URL,
+		"status_code", resp.StatusCode,
+		"content_type", resp.Header.Get("Content-Type"),
+		"content_length", resp.Header.Get("Content-Length"),
+	)
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("M3U8 URL returned status %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+// testTSAccessibility tests if a TS segment URL is accessible
+func (e *extractor) testTSAccessibility(tsURL string, headers map[string]string) error {
+	resp, err := request.Request("HEAD", tsURL, nil, headers)
+	if err != nil {
+		return fmt.Errorf("failed to access TS URL: %w", err)
+	}
+	defer resp.Body.Close()
+
+	slog.Info("TS segment accessibility check",
+		"url", tsURL,
+		"status_code", resp.StatusCode,
+		"content_type", resp.Header.Get("Content-Type"),
+		"content_length", resp.Header.Get("Content-Length"),
+	)
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("TS URL returned status %d", resp.StatusCode)
+	}
+
+	return nil
 }

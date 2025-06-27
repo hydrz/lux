@@ -243,11 +243,16 @@ func Md5(text string) string {
 
 // M3u8URLs get all urls from m3u8 url
 func M3u8URLs(uri string) ([]string, error) {
+	return M3u8URLsWithHeaders(uri, nil)
+}
+
+// M3u8URLsWithHeaders get all urls from m3u8 url with custom headers
+func M3u8URLsWithHeaders(uri string, headers map[string]string) ([]string, error) {
 	if len(uri) == 0 {
 		return nil, errors.New("url is null")
 	}
 
-	html, err := request.Get(uri, "", nil)
+	html, err := request.Get(uri, "", headers)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
