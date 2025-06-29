@@ -134,8 +134,7 @@ func (downloader *Downloader) save(part *extractors.Part, refer, fileName string
 		return err
 	}
 	// Skip segment file
-	// TODO: Live video URLs will not return the size
-	if exists && fileSize == part.Size {
+	if exists && fileSize != 0 && fileSize == part.Size {
 		downloader.bar.Add64(fileSize)
 		return nil
 	}

@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -141,7 +142,7 @@ func addFlags(cmd *cobra.Command) {
 	// Performance options
 	cmd.PersistentFlags().BoolVarP(&multiThread, "multi-thread", "m", false, "Multiple threads to download single video")
 	cmd.PersistentFlags().UintVar(&retry, "retry", 10, "How many times to retry when the download failed")
-	cmd.PersistentFlags().UintVar(&chunkSize, "chunk-size", 1, "HTTP chunk size for downloading (in MB)")
+	cmd.PersistentFlags().UintVar(&chunkSize, "chunk-size", 0, "HTTP chunk size for downloading (in MB)")
 	cmd.PersistentFlags().UintVarP(&thread, "thread", "n", 10, "The number of download thread (only works for multiple-parts video)")
 
 	// Aria2 options
@@ -170,6 +171,7 @@ func addFlags(cmd *cobra.Command) {
 // runDownload is the main run function for the root command
 func runDownload(cmd *cobra.Command, args []string) error {
 	if debug {
+		slog.SetLogLoggerLevel(slog.LevelDebug)
 		cmd.Printf(cmd.VersionTemplate())
 	}
 
@@ -292,6 +294,7 @@ func downloadURL(videoURL string) error {
 			continue
 		}
 		if err = defaultDownloader.Download(item); err != nil {
+			slog.Error("Failed to download item", "url", item.URL, "error", err)
 			errors = append(errors, err)
 		}
 	}
